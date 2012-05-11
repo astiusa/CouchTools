@@ -18,8 +18,8 @@ class CouchViewException(Exception):
 
 
 class CouchTools(object):
-    """ wrap couchdb.client with some defaults. """
-def __init__(self, dbname, init_new=False, couchhost="localhost", couchport="5984"):
+    ''' wrap couchdb.client with some ostensibly sensible defaults. '''
+    def __init__(self, dbname, init_new=False, couchhost="localhost", couchport="5984"):
         '''
         # example usage
         from couchtools import Couchtools
@@ -36,7 +36,7 @@ def __init__(self, dbname, init_new=False, couchhost="localhost", couchport="598
                 del self.server[dbname]
             self.db = self.server.create(dbname)
         self.db = self.server[dbname]
-        
+
     def change_db(self,dbname):
         self.server[dbname]
         return self
@@ -100,7 +100,7 @@ def __init__(self, dbname, init_new=False, couchhost="localhost", couchport="598
             return valuedata
         else:
             return None
-        
+
     def delete(self, docid):
         ''' delete a document. '''
         thedoc = self.db.get(docid)
