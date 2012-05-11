@@ -19,7 +19,7 @@ class CouchViewException(Exception):
 
 class CouchTools(object):
     ''' wrap couchdb.client with some ostensibly sensible defaults. '''
-    def __init__(self, dbname, init_new=False, couchhost="localhost", couchport="5984"):
+    def __init__(self, dbname='test', init_new=False, couchhost="localhost", couchport="5984"):
         '''
         # example usage
         from couchtools import Couchtools
@@ -35,11 +35,29 @@ class CouchTools(object):
             if dbname in self.server:
                 del self.server[dbname]
             self.db = self.server.create(dbname)
-        self.db = self.server[dbname]
+        #self.db = self.server[dbname]
+        self.change_db(dbname)
 
-    def change_db(self,dbname):
-        self.server[dbname]
-        return self
+    def drop(self,dbname):
+        try:
+            del self.server[dbname]
+            return True
+        except:
+            return False
+
+    def change_db(self, dbname):
+        try:
+            self.server[dbname]
+        except:
+            # try to create the DB since it may not exist
+            if dbname not in self.server:
+                self.db = self.server.create(dbname)
+            try:
+                self.change_db(dbname)
+            except:
+                # AW SNAP
+                return False
+        return True
 
     def docid(self):
         """ Don't let couch make its own uuid. Apparently that's bad I guess? """
