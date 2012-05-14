@@ -7,27 +7,36 @@ try:
 except ImportError:
     from simpleuuid import uuid
 
+
 class CouchSaveException(Exception):
     ''' At some point I guess I should do something useful with exceptions. '''
     pass
 
 
 class CouchViewException(Exception):
-    ''' Again at some point I should do something useful here. '''
+    ''' At some point I guess I should do something useful with exceptions. '''
+    pass
+
+
+class CouchDBException(Exception):
+    ''' generic "there was a problem at the database level" exception. '''
     pass
 
 
 class CouchTools(object):
-    ''' wrap couchdb.client with some ostensibly sensible defaults. '''
+    '''
+    wrap couchdb.client with some ostensibly sensible defaults and make it feel sort-of
+    like a SQL db (familiar terms like drop, etc)
+    '''
     def __init__(self, dbname='test', init_new=False, couchhost="localhost", couchport="5984"):
         '''
         # example usage
-        from couchtools import Couchtools
-        d = Couchtools('rhel')
+        from couchtools import CouchTools
+        d = CouchTools('derp')
         f = {blah: "something"} # some dict of things
         d.save(f) # saves to couch
         # to connect to a different couch instance, do something like
-        d = Couchtools('rhel', couchhost='asti-couch.asti-usa.com')
+        d = Couchtools('hurr', couchhost='couch.haircrappery.net')
         '''
         serverstring = "http://" + couchhost + ":" + couchport + "/"
         self.server = couch.Server(serverstring)
@@ -35,17 +44,18 @@ class CouchTools(object):
             if dbname in self.server:
                 del self.server[dbname]
             self.db = self.server.create(dbname)
-        #self.db = self.server[dbname]
-        self.change_db(dbname)
+        self.use(dbname)
 
-    def drop(self,dbname):
+    def drop(self, dbname):
+        ''' "drop" a database. doesn't try to hard. '''
         try:
             del self.server[dbname]
             return True
         except:
-            return False
+            raise CouchDBException("There was a problem dropping the database " + dbname)
 
-    def change_db(self, dbname):
+    def use(self, dbname):
+        ''' set the current DB '''
         try:
             self.server[dbname]
         except:
@@ -53,39 +63,49 @@ class CouchTools(object):
             if dbname not in self.server:
                 self.db = self.server.create(dbname)
             try:
-                self.change_db(dbname)
+                self.use(dbname)
             except:
                 # AW SNAP
                 return False
         return True
 
     def docid(self):
-        """ Don't let couch make its own uuid. Apparently that's bad I guess? """
+        ''' Don't let couch make its own uuid. Apparently that's bad.
+            Something about idempotence. (call your sysadmin if it lasts for more than 4 hours)
+        '''
         return uuid4().hex
 
     def get(self, docid):
-        ''' Get a document by ID. '''
+        '''
+            Get a document by ID.
+        '''
+        # TODO: need to be able to fetch optional revision.
         return self.db.get(docid, default={})
 
-    # FIXME this is not right at all.
-    def put(self,id,path_to_attach):
+    def put(self, doc, path_to_attach):
+        ''' attach a document. you can pass an empty dict as doc or an existing dict/document. '''
         filename = open(path_to_attach)
-        return self.db.put_attachment(id,filename,path_to_attach)
+        if '_id' not in doc:
+            doc['_id'] = self.docid()
+        try:
+            self.db.put_attachment(doc, filename)
+        except:
+            return False
 
-    # FIXME hurr needs maor werk durr
-    def load(self,path):
-        """ Given a path to a file, load the database, ie do lots of inserts."""
+    # TODO it may be better to use update() instead of save().
+    def load(self, path):
+        ''' Given a path to a file, load the database, ie do lots of inserts.'''
         payload = open(path).readlines()
         for x in payload:
             try:
                 self.save(x)
             except:
-                pass # TODO something? I guess.
+                raise CouchSaveException('Problem loading ' + x + ' from ' + path)
 
     def save(self, entry):
         '''
         save wrapper. checks that you included a uuid. doesn't check that
-        your thing is even remotely serializable
+        your thing is even remotely JSON-serializable.
         '''
         if '_id' not in entry:
             entry['_id'] = uuid().hex
@@ -93,22 +113,21 @@ class CouchTools(object):
             savedata = self.db.save(entry)
         except Exception:  # TODO do something here if the entry isn't saveable
             raise CouchSaveException("There was a problem saving " + str(entry))
-        except UnicodeDecodeError:  # TODO I still need to do something reasonable when there's a thingee.
+        except UnicodeDecodeError:  # TODO I still need to do something reasonable when there's a unicode problem.
             pass
         return savedata
 
-
-    # TODO: Also, this method is pretty shitty if your view has a compound key.
     def view(self, viewname, keyval=None):
         ''' get a view with an optional specific key. '''
         # TODO: This should probably check if keyval is a list or a tuple or
-        # some shit since that changes the calling convention
+        # something since that changes the calling convention
         if '/' not in viewname:
             raise RhelViewException("View should probably have a slash in the name, eg render/derp")
         if keyval:
             query = self.db.view(viewname, key=keyval)
         else:
             query = self.db.view(viewname)
+        # TODO: this method is pretty bad if your view has a compound key. You're going to get back crap.
         if len(query.rows) == 1:
             return query.rows[0]['value']
         elif len(query.rows) > 1:
