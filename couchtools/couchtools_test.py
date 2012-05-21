@@ -20,6 +20,7 @@ import unittest
 
 
 class TestCouchTools(unittest.TestCase):
+
     def setUp(self):
         self.db = CouchTools(init_new=True)
 
@@ -69,7 +70,6 @@ class TestCouchTools(unittest.TestCase):
         ''' i should probably have all this stuff done in a not-test method, but oh well. '''
         doc = {}
         doc['name'] = 'gregg'
-        saved = self.db.save(doc)
         if self.db.get('_design/render'):
             self.assertTrue(self.db.delete('_design/render'))
         viewcode = open('views/map.js').read()
@@ -77,6 +77,8 @@ class TestCouchTools(unittest.TestCase):
         view['_id'] = "_design/render"
         self.db.save(view)
         self.assertEqual(self.db.view('render/name')['name'], 'gregg')
+
+    # TODO: test compound keys
 
 if __name__ == '__main__':
     unittest.main()

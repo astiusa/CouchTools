@@ -16,7 +16,6 @@
 
 
 import couchdb.client as couch
-import json
 try:
     from uuid import uuid4 as uuid
 except ImportError:
@@ -138,7 +137,7 @@ class CouchTools(object):
         # TODO: This should probably check if keyval is a list or a tuple or
         # something since that changes the calling convention
         if '/' not in viewname:
-            raise RhelViewException("View should probably have a slash in the name, eg render/derp")
+            raise CouchViewException("View should probably have a slash in the name, eg render/derp")
         if keyval:
             query = self.db.view(viewname, key=keyval)
         else:
