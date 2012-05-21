@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+# TODO: incorporate mapping stuff so we can validate models, etc
 
 import couchdb.client as couch
 try:
@@ -45,7 +46,7 @@ class CouchTools(object):
     def __init__(self, dbname='test', init_new=False, couchhost="localhost", couchport="5984"):
         '''
         # example usage
-        from couchtools import CouchTools
+        from couchtools.couchtools import CouchTools
         d = CouchTools('derp')
         f = {blah: "something"} # some dict of things
         d.save(f) # saves to couch

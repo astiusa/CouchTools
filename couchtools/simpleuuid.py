@@ -14,6 +14,10 @@
 
 
 class simpleuuid(object):
+    '''
+    In case you're running on a machine so old it doesn't have a uuid module, eg python 2.4
+    Also note that this is not even remotely RFC4122-compliant, it's an emergency fallback.
+    '''
     def __init__(self):
         import random
         self.hex = ''

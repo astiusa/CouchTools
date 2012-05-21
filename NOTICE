@@ -2,4 +2,4 @@ Original by http://www.asti-usa.com/
 Original code by J. Gregg Thomason <gregg.thomason@asti-usa.com>
 
 A wrapper library for http://packages.python.org/CouchDB/index.html that tries to make
-things slightly nicer and 'DRY'
+things slightly nicer and DRY.
