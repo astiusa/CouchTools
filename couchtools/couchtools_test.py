@@ -78,7 +78,24 @@ class TestCouchTools(unittest.TestCase):
         view = json.loads(viewcode)
         view['_id'] = "_design/render"
         self.db.save(view)
-        self.assertEqual(self.db.view('render/name')['name'], 'gregg')
+        results = self.db.view('render/name')
+        self.assertEqual(results[0], 'gregg')
+
+    def test_compound_key_view(self):
+        ''' see what happens when we return a compound key. '''
+        doc = {}
+        doc['name'] = 'gregg'
+        doc['first_name'] = 'julius'
+        doc['last_name'] = 'thomason'
+        self.db.save(doc)
+        if self.db.get('_design/render'):
+            self.assertTrue(self.db.delete('_design/render'))
+        viewcode = open('views/map.js').read()
+        view = json.loads(viewcode)
+        view['_id'] = "_design/render"
+        self.db.save(view)
+        results = self.db.view('render/compound')
+        self.assertEqual(results[0][0], 'julius')
 
 if __name__ == '__main__':
     unittest.main()

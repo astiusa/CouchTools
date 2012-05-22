@@ -134,7 +134,14 @@ class CouchTools(object):
         return savedata
 
     def view(self, viewname, keyval=None):
-        ''' get a view with an optional specific key. '''
+        '''
+            get a view with an optional specific key. assume 'derp' is the results of the view
+            For simple keys (ie emit(doc.key, doc))
+            value of view is simply derp[0] (whatever that may be; dict, tuple, etc)
+            for compound keys (ie emit([doc.a, doc.b], doc))
+            value of view is derp[1], derp[0] contains the keys
+            so to access the second key, derp[0][1]
+        '''
         # TODO: This should probably check if keyval is a list or a tuple or
         # something since that changes the calling convention
         if '/' not in viewname:
@@ -143,13 +150,12 @@ class CouchTools(object):
             query = self.db.view(viewname, key=keyval)
         else:
             query = self.db.view(viewname)
-        # TODO: this method is pretty bad if your view has a compound key. You're going to get back crap.
         if len(query.rows) == 1:
-            return query.rows[0]['value']
+            return (query.rows[0]['key'],query.rows[0]['value'])
         elif len(query.rows) > 1:
             valuedata = []
             for queryrow in query.rows:
-                valuedata.append(queryrow['value'])
+                valuedata.append((queryrow['key'],queryrow['value']))
             return valuedata
         else:
             return None
