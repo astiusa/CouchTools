@@ -25,6 +25,7 @@ class TestCouchTools(unittest.TestCase):
         self.db = CouchTools(init_new=True)
 
     def test_change_db(self):
+        ''' set the current DB '''
         self.assertTrue(self.db.use('testdb'))
 
     def test_drop_db(self):
@@ -67,9 +68,10 @@ class TestCouchTools(unittest.TestCase):
         self.assertRegexpMatches(saved[1], '^2')
 
     def test_query_view(self):
-        ''' i should probably have all this stuff done in a not-test method, but oh well. '''
+        ''' Test the results of a query on a view. '''
         doc = {}
         doc['name'] = 'gregg'
+        self.db.save(doc)
         if self.db.get('_design/render'):
             self.assertTrue(self.db.delete('_design/render'))
         viewcode = open('views/map.js').read()
@@ -77,8 +79,6 @@ class TestCouchTools(unittest.TestCase):
         view['_id'] = "_design/render"
         self.db.save(view)
         self.assertEqual(self.db.view('render/name')['name'], 'gregg')
-
-    # TODO: test compound keys
 
 if __name__ == '__main__':
     unittest.main()
