@@ -34,12 +34,9 @@ class TestCouchTools(unittest.TestCase):
 
     def test_load_view(self):
         ''' load a view '''
-        if self.db.get('_design/render'):
-            self.assertTrue(self.db.delete('_design/render'))
-        viewcode = open('views/map.js').read()
-        view = json.loads(viewcode)
-        view['_id'] = "_design/render"
-        self.assertIsNotNone(self.db.save(view))
+        if self.db.get('_design/testrender'):
+            self.assertTrue(self.db.delete('_design/testrender'))
+        self.assertIsNotNone(self.db.loadview('views/map.js', '_design/testrender'))
 
     def test_load_data(self):
         ''' load some data. '''
@@ -72,30 +69,59 @@ class TestCouchTools(unittest.TestCase):
         doc = {}
         doc['name'] = 'gregg'
         self.db.save(doc)
-        if self.db.get('_design/render'):
-            self.assertTrue(self.db.delete('_design/render'))
-        viewcode = open('views/map.js').read()
-        view = json.loads(viewcode)
-        view['_id'] = "_design/render"
-        self.db.save(view)
-        results = self.db.view('render/name')
+        if self.db.get('_design/testrender'):
+            self.assertTrue(self.db.delete('_design/testrender'))
+        self.db.loadview('views/map.js', '_design/testrender')
+        results = self.db.view('testrender/name')
         self.assertEqual(results[0], 'gregg')
 
     def test_compound_key_view(self):
-        ''' see what happens when we return a compound key. '''
+        ''' test that compound keys (emit([derp,hurr],hurrdurr)) works. '''
         doc = {}
         doc['name'] = 'gregg'
         doc['first_name'] = 'julius'
         doc['last_name'] = 'thomason'
         self.db.save(doc)
-        if self.db.get('_design/render'):
-            self.assertTrue(self.db.delete('_design/render'))
-        viewcode = open('views/map.js').read()
-        view = json.loads(viewcode)
-        view['_id'] = "_design/render"
-        self.db.save(view)
-        results = self.db.view('render/compound')
+        if self.db.get('_design/testrender'):
+            self.assertTrue(self.db.delete('_design/testrender'))
+        self.db.loadview('views/map.js', '_design/testrender')
+        results = self.db.view('testrender/compound')
         self.assertEqual(results[0][0], 'julius')
+
+    def test_python_view(self):
+        ''' load a python-based view. '''
+        if self.db.get('_design/pythonview'):
+            self.assertTrue(self.db.delete('_design/pythonview'))
+        viewcode = open('views/map.py').read()
+        view = json.loads(viewcode)
+        self.assertIsNotNone(self.db.save(view))
+
+    def test_query_python_view(self):
+        ''' Test the results of a query on a python view. '''
+        doc = {}
+        doc['name'] = 'gregg'
+        self.db.save(doc)
+        if self.db.get('_design/pythonview'):
+            self.assertTrue(self.db.delete('_design/pythonview'))
+        viewcode = open('views/map.py').read()
+        view = json.loads(viewcode)
+        view['_id'] = "_design/pythonview"
+        self.db.save(view)
+        results = self.db.view('pythonview/name')
+        self.assertEqual(results[0], 'gregg')
+
+    def test_overwrite(self):
+        ''' ensure that we update a document, rather than saving a new one. '''
+        doc = {}
+        doc['a'] = 'b'
+        anid = self.db.docid()
+        doc['_id'] = anid
+        self.db.save(doc)
+        thedoc = self.db.get(anid)
+        thedoc['name'] = 'gregg'
+        saved = self.db.save(thedoc)
+        self.assertRegexpMatches(saved[1], '^2')
+
 
 if __name__ == '__main__':
     unittest.main()

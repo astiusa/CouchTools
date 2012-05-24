@@ -21,7 +21,8 @@ try:
     from uuid import uuid4 as uuid
 except ImportError:
     from simpleuuid import uuid
-
+import json
+import os.path
 
 class CouchSaveException(Exception):
     ''' At some point I guess I should do something useful with exceptions. '''
@@ -118,7 +119,8 @@ class CouchTools(object):
             except:
                 raise CouchSaveException('Problem loading ' + x + ' from ' + path)
 
-    def save(self, entry):
+    # TODO: if overwrite is set up False, create a new document rather than overwriting a new one.
+    def save(self, entry,overwrite=True):
         '''
         save wrapper. checks that you included a uuid. doesn't check that
         your thing is even remotely JSON-serializable.
@@ -168,3 +170,22 @@ class CouchTools(object):
             return True
         except:
             return False
+
+    def loadview(self,view,viewname=None):
+        '''
+        load a view into the DB from a file or string. Accepts a (string) path to
+        file or a string of view code.
+        '''
+        try:
+            viewcode = open(view).read()
+            filename = os.path.basename(view)
+            if not viewname:
+                viewname = filename.split('.')[0]
+        except IOError:
+            viewcode = view
+            if not viewname:
+                viewname = "_design/render" # TODO improve this somehow.
+        view = json.loads(viewcode)
+        view['_id'] = viewname
+        return self.db.save(view)
+
