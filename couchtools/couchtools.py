@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-# Copyright 2012, Advanced Simulation Technology, inc. http://www.asti-usa.com/
+# Copyright 2012, Advanced Simulation Technology, inc.
+# http://www.asti-usa.com/
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -23,6 +24,9 @@ except ImportError:
     from simpleuuid import uuid
 import json
 import os.path
+
+VERSION = 0.4
+
 
 class CouchSaveException(Exception):
     ''' At some point I guess I should do something useful with exceptions. '''
@@ -63,13 +67,25 @@ class CouchTools(object):
         self.use(dbname)
 
     def drop(self, dbname):
-        ''' "drop" a database. doesn't try to hard. '''
+        ''' "drop" a database. doesn't try too hard. '''
         try:
             del self.server[dbname]
             return True
         except:
             raise CouchDBException("There was a problem dropping the database " + dbname)
             return False
+
+    def since_change(self, changeid):
+        ''' return the list of changes since changeid.
+            TODO: This should almost certainly take other options. but it'll work for now.
+        '''
+        # keep the latest change we've asked for (latest_change_id), in case we want it,
+        # and the highest (most recent) actual DB change (last_change_id)
+        if changeid < self.last_change_id:
+            self.latest_change_id = changeid
+        else:
+            self.last_change_id = changeid
+        return self.db.changes(since=changeid)
 
     def use(self, dbname):
         ''' set the current DB '''
@@ -120,7 +136,7 @@ class CouchTools(object):
                 raise CouchSaveException('Problem loading ' + x + ' from ' + path)
 
     # TODO: if overwrite is set up False, create a new document rather than overwriting a new one.
-    def save(self, entry,overwrite=True):
+    def save(self, entry, overwrite=True):
         '''
         save wrapper. checks that you included a uuid. doesn't check that
         your thing is even remotely JSON-serializable.
@@ -153,11 +169,11 @@ class CouchTools(object):
         else:
             query = self.db.view(viewname)
         if len(query.rows) == 1:
-            return (query.rows[0]['key'],query.rows[0]['value'])
+            return [query.rows[0]['key'], query.rows[0]['value']]
         elif len(query.rows) > 1:
             valuedata = []
             for queryrow in query.rows:
-                valuedata.append((queryrow['key'],queryrow['value']))
+                valuedata.append([queryrow['key'], queryrow['value']])
             return valuedata
         else:
             return None
@@ -171,7 +187,7 @@ class CouchTools(object):
         except:
             return False
 
-    def loadview(self,view,viewname=None):
+    def loadview(self, view, viewname=None):
         '''
         load a view into the DB from a file or string. Accepts a (string) path to
         file or a string of view code.
@@ -180,12 +196,11 @@ class CouchTools(object):
             viewcode = open(view).read()
             filename = os.path.basename(view)
             if not viewname:
-                viewname = filename.split('.')[0]
+                viewname = "_design/" + filename.split('.')[0]
         except IOError:
             viewcode = view
             if not viewname:
-                viewname = "_design/render" # TODO improve this somehow.
+                viewname = "_design/render"  # TODO improve this somehow.
         view = json.loads(viewcode)
         view['_id'] = viewname
         return self.db.save(view)
-
