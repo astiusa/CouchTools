@@ -143,10 +143,11 @@ class CouchTools(object):
         '''
         if '_id' not in entry:
             entry['_id'] = uuid().hex
+        # TODO: check that _rev is in the doc, else updates will fail.
         try:
             savedata = self.db.save(entry)
-        except Exception:  # TODO do something here if the entry isn't saveable
-            raise CouchSaveException("There was a problem saving " + str(entry))
+        except Exception, e:  # TODO do something here if the entry isn't saveable
+            raise CouchSaveException("There was a problem saving " + str(entry) + ' ' + e[1])
         except UnicodeDecodeError:  # TODO I still need to do something reasonable when there's a unicode problem.
             pass
         return savedata
@@ -180,7 +181,7 @@ class CouchTools(object):
 
     def delete(self, docid):
         ''' delete a document. '''
-        thedoc = self.db.get(docid)
+        thedoc = self.get(docid)
         try:
             self.db.delete(thedoc)
             return True
@@ -204,3 +205,13 @@ class CouchTools(object):
         view = json.loads(viewcode)
         view['_id'] = viewname
         return self.db.save(view)
+
+    #def find(self, doc):
+    #    '''
+    #    check to see if the doc already exists in the database.
+    #    '''
+    #    this_id = doc['_id']
+    #    if self.get(this_id):
+    #        return doc
+    #    else:
+    #        return False
