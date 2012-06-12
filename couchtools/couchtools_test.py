@@ -110,17 +110,6 @@ class TestCouchTools(unittest.TestCase):
         results = self.db.view('pythonview/name')
         self.assertEqual(results[0], 'gregg')
 
-    def test_overwrite(self):
-        ''' ensure that we update a document, rather than saving a new one. '''
-        doc = {}
-        doc['a'] = 'b'
-        anid = self.db.docid()
-        doc['_id'] = anid
-        self.db.save(doc)
-        thedoc = self.db.get(anid)
-        thedoc['name'] = 'gregg'
-        saved = self.db.save(thedoc)
-        self.assertRegexpMatches(saved[1], '^2')
 
 
 if __name__ == '__main__':
