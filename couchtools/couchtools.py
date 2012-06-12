@@ -25,7 +25,7 @@ except ImportError:
 import json
 import os.path
 
-VERSION = 0.4
+VERSION = 0.5
 
 
 class CouchSaveException(Exception):
@@ -135,7 +135,6 @@ class CouchTools(object):
             except:
                 raise CouchSaveException('Problem loading ' + x + ' from ' + path)
 
-    # TODO: if overwrite is set up False, create a new document rather than overwriting a new one.
     def save(self, entry, overwrite=True):
         '''
         save wrapper. checks that you included a uuid. doesn't check that
@@ -143,10 +142,17 @@ class CouchTools(object):
         '''
         if '_id' not in entry:
             entry['_id'] = uuid().hex
-        # TODO: check that _rev is in the doc, else updates will fail.
+        # check that _rev is in the doc, else updates will fail.
+        if overwrite == True and '_rev' not in entry:
+            try:
+                thisentry = self.get(entry['_id'])
+                if thisentry:
+                    entry['_rev'] = thisentry['_rev']
+            except Exception, e:
+                raise CouchSaveException("Cannot save a revision without setting _rev." + e[1])
         try:
             savedata = self.db.save(entry)
-        except Exception, e:  # TODO do something here if the entry isn't saveable
+        except Exception, e: 
             raise CouchSaveException("There was a problem saving " + str(entry) + ' ' + e[1])
         except UnicodeDecodeError:  # TODO I still need to do something reasonable when there's a unicode problem.
             pass
@@ -206,12 +212,3 @@ class CouchTools(object):
         view['_id'] = viewname
         return self.db.save(view)
 
-    #def find(self, doc):
-    #    '''
-    #    check to see if the doc already exists in the database.
-    #    '''
-    #    this_id = doc['_id']
-    #    if self.get(this_id):
-    #        return doc
-    #    else:
-    #        return False
