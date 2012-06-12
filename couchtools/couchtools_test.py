@@ -73,7 +73,20 @@ class TestCouchTools(unittest.TestCase):
             self.assertTrue(self.db.delete('_design/testrender'))
         self.db.loadview('views/map.js', '_design/testrender')
         results = self.db.view('testrender/name')
-        self.assertEqual(results[0], 'gregg')
+        for r in results:
+            self.assertEqual(r['key'], 'gregg')
+
+    def test_query_view_value(self):
+        ''' Test the results of a query on a view, looking for a specific value in the returned values. '''
+        doc = {}
+        doc['name'] = 'gregg'
+        self.db.save(doc)
+        if self.db.get('_design/testrender'):
+            self.assertTrue(self.db.delete('_design/testrender'))
+        self.db.loadview('views/map.js', '_design/testrender')
+        results = self.db.view('testrender/name')
+        for r in results:
+            self.assertEqual(r['value']['name'], 'gregg')
 
     def test_compound_key_view(self):
         ''' test that compound keys (emit([derp,hurr],hurrdurr)) works. '''
@@ -85,8 +98,9 @@ class TestCouchTools(unittest.TestCase):
         if self.db.get('_design/testrender'):
             self.assertTrue(self.db.delete('_design/testrender'))
         self.db.loadview('views/map.js', '_design/testrender')
-        results = self.db.view('testrender/compound')
-        self.assertEqual(results[0][0], 'julius')
+        result = self.db.view('testrender/compound')
+        for r in result:
+            self.assertEqual(r['key'][0], 'julius')
 
     def test_python_view(self):
         ''' load a python-based view. '''
@@ -95,6 +109,34 @@ class TestCouchTools(unittest.TestCase):
         viewcode = open('views/map.py').read()
         view = json.loads(viewcode)
         self.assertIsNotNone(self.db.save(view))
+
+    def test_nothing_at_all(self):
+        ''' test to see what happens when nothing at all happens. '''
+        if self.db.get('_design/testrender'):
+            self.assertTrue(self.db.delete('_design/testrender'))
+        self.db.loadview('views/map.js', '_design/testrender')
+        for result in self.db.view('testrender/name', keyval="gary"):
+            self.assertFalse(result)
+
+    def test_key_in(self):
+        ''' test to see if a particular value exists as a key. '''
+        doc = {}
+        doc['name'] = 'gregg'
+        self.db.save(doc)
+        if self.db.get('_design/testrender'):
+            self.assertTrue(self.db.delete('_design/testrender'))
+        self.db.loadview('views/map.js', '_design/testrender')
+        self.assertTrue(self.db.exists('testrender/name', 'gregg'))
+
+    def test_value_in(self):
+        ''' test to see if a particular value exists, with a named key. '''
+        doc = {}
+        doc['name'] = 'gregg'
+        self.db.save(doc)
+        if self.db.get('_design/testrender'):
+            self.assertTrue(self.db.delete('_design/testrender'))
+        self.db.loadview('views/map.js', '_design/testrender')
+        self.assertTrue(self.db.exists('testrender/name', 'gregg', 'name'))
 
     def test_query_python_view(self):
         ''' Test the results of a query on a python view. '''
@@ -108,8 +150,8 @@ class TestCouchTools(unittest.TestCase):
         view['_id'] = "_design/pythonview"
         self.db.save(view)
         results = self.db.view('pythonview/name')
-        self.assertEqual(results[0], 'gregg')
-
+        for r in results:
+            self.assertEqual(r['key'], 'gregg')
 
 
 if __name__ == '__main__':

@@ -158,14 +158,30 @@ class CouchTools(object):
             pass
         return savedata
 
+    def exists(self, view, testforkey, testforvalue=None):
+        '''
+            Like 'view' but a predicate to check if a particular value exists.
+            :param view the name of the view to query, like self.view()
+            :param testforkey the value to test for, as the key value of the query.
+            :param testforvalue (optional) optional value key to test again
+            EG, yield of {key: gregg, value: name: gregg}
+            testforkey == gregg TRUE
+            testforvalue name testforkey == gregg TRUE
+        '''
+        for item in self.view(view):
+            if testforkey in item['key']:
+                return True
+            if testforvalue:
+                if testforvalue in item['value'][testforkey]:
+                    return True
+        return False
+
     def view(self, viewname, keyval=None):
         '''
-            get a view with an optional specific key. assume 'derp' is the results of the view
-            For simple keys (ie emit(doc.key, doc))
-            value of view is simply derp[0] (whatever that may be; dict, tuple, etc)
-            for compound keys (ie emit([doc.a, doc.b], doc))
-            value of view is derp[1], derp[0] contains the keys
-            so to access the second key, derp[0][1]
+            generator for query results.
+            :param viewname name of design doc and view, must include '/'
+            :param keyval optional name of key to filter on (presently, string)
+            yields generator of {"key": query key, "value": query value} values
         '''
         # TODO: This should probably check if keyval is a list or a tuple or
         # something since that changes the calling convention
@@ -175,15 +191,8 @@ class CouchTools(object):
             query = self.db.view(viewname, key=keyval)
         else:
             query = self.db.view(viewname)
-        if len(query.rows) == 1:
-            return [query.rows[0]['key'], query.rows[0]['value']]
-        elif len(query.rows) > 1:
-            valuedata = []
-            for queryrow in query.rows:
-                valuedata.append([queryrow['key'], queryrow['value']])
-            return valuedata
-        else:
-            return None
+        for queryrow in query.rows:
+            yield {"key": queryrow['key'], "value": queryrow['value']}
 
     def delete(self, docid):
         ''' delete a document. '''
