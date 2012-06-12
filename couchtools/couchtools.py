@@ -152,7 +152,7 @@ class CouchTools(object):
                 raise CouchSaveException("Cannot save a revision without setting _rev." + e[1])
         try:
             savedata = self.db.save(entry)
-        except Exception, e: 
+        except Exception, e:
             raise CouchSaveException("There was a problem saving " + str(entry) + ' ' + e[1])
         except UnicodeDecodeError:  # TODO I still need to do something reasonable when there's a unicode problem.
             pass
@@ -167,6 +167,7 @@ class CouchTools(object):
             EG, yield of {key: gregg, value: name: gregg}
             testforkey == gregg TRUE
             testforvalue name testforkey == gregg TRUE
+            I miss predicate methods in Ruby; this should be named exists?
         '''
         for item in self.view(view):
             if testforkey in item['key']:
@@ -220,4 +221,3 @@ class CouchTools(object):
         view = json.loads(viewcode)
         view['_id'] = viewname
         return self.db.save(view)
-
